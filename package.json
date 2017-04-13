@@ -1,0 +1,18 @@
+{
+  "name": "FlyEdit",
+  "version": "0.0.1",
+  "description": "Edit remote files locally",
+  "author": "BojDom",
+  "private": false,
+  "scripts": {},
+  "dependencies": {
+    "node-watch": "^0.5.2",
+    "scp2": "^0.5.0",
+    "upath": "^1.0.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">= 4.0.0",
+    "npm": ">= 3.0.0"
+  }
+}
