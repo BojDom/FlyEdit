@@ -7,16 +7,19 @@ const watch = require('node-watch');
 var Promise = require('bluebird');
 const fs = require('fs')
 const rx = require('rxjs');
-const multimatch=require('multimatch');
-var excludeDirs = ["*","!node_modules", "!.git"];
-var excludeFiles = []
+const multimatch = require('multimatch');
+var excludeDirs = ["**", '!**/node_modules/**', '!node_modules', "!.git", "!dist"];
+
+
+var excludeFiles = [];
+
+
 const mkdirp = require('mkdirp');
 var sshClient = require('ssh2').Client;
 var scpClient = require('scp2').Client;
 var FEconfig = require('./FlyEdit-config.js');
-
-
 var remoteDir = {}
+var watcher;
 var sftp = {};
 var files = [];
 var sshConn = new sshClient();
@@ -26,7 +29,7 @@ var remoteReadSubject = new rx.Subject();
 var remoteDwnlSubject = new rx.Subject();
 
 scpConn.defaults(FEconfig.server)
-console.log(Object.keys(sshConn), Object.keys(scpConn))
+
 
 fs.readdir(FEconfig.localRoot, (err, ok) => {
 	if (err) fs.mkdir(FEconfig.localRoot, (err2, ok2) => {
@@ -35,11 +38,10 @@ fs.readdir(FEconfig.localRoot, (err, ok) => {
 })
 
 var remoteReadSubscription = remoteReadSubject.debounceTime(1000).subscribe(x => {
-	if (files.length > 0){
-			console.log('files in queue',files.length)
-			downloadFiles()
-		}
-	else {
+	if (files.length > 0) {
+		console.log('files in queue', files.length)
+		downloadFiles()
+	} else {
 		console.log('No file to download');
 		process.exit(0);
 	}
@@ -92,10 +94,17 @@ function getDirectory(dir, from) {
 		let dirs = list.filter(f => {
 			if (f.attrs.mode != 16877) return false;
 			return true;
-		}).map(d => {return d.filename})
+		}).map(d => {
+			return d.filename
+		})
 
-		dirs=multimatch(dirs,excludeDirs)
-		dirs.map(d=>{getDirectory(d, dirr)})
+		dirs = multimatch(dirs, excludeDirs)
+			/*
+					console.log(dirs);
+					process.exit();*/
+		dirs.map(d => {
+			getDirectory(d, dirr)
+		})
 
 		let relative = (filepath).split('/').join('.');
 		if (relative.length == 2) relative = '/';
@@ -118,13 +127,13 @@ function downloadFiles() {
 		n++;
 		if (n < files.length) downloadFile(files[n], `${n} of ${files.length}`);
 		else {
-			console.log('DOWNLOAD COMPLETE!',n);
+			console.log('DOWNLOAD COMPLETE!', n);
 			watchProject()
 		}
 	})
 }
 
-function downloadFile(f,pct) {
+function downloadFile(f, pct) {
 
 
 	let localPath = f.substring(0, f.lastIndexOf("/"));
@@ -152,42 +161,52 @@ function downloadFile(f,pct) {
 					process.exit(1)
 
 				} else {
-					console.log('downloaded', f ,pct);
+					console.log('downloaded', f, pct);
 					remoteDwnlSubject.next()
 				}
 			})
 	}
 }
 
-function watchProject(){
+function watchProject() {
 
-	watch(FEconfig.localRoot, { recursive: true }, function(evt, name) {
-		 name = name.replace(FEconfig.localRoot,'');
-		 console.log('changed ',name)
-		 upload(name)
+	let watchOptions = {
+		recursive: true,
+		filter: (name) => {
+			return (multimatch(upath.join(name), excludeDirs).length > 0)
+		}
+	}
+
+	watcher = watch(FEconfig.localRoot, watchOptions, function(evt, name) {
+		name = name.replace(FEconfig.localRoot, '');
+		console.log(upath.join(name))
+		console.log('changed ', name, multimatch(upath.join(name), excludeDirs))
+
+		upload(name)
 	});
 }
 
-function upload(f){
+function upload(f) {
 
 	let from = path.join(FEconfig.localRoot, f);
 	let to = upath.join(FEconfig.server.root, f)
 
-	scpConn.upload(from,to,(err, ok) => {
-				if (err) {
-					console.log('error uploading', upath.join(FEconfig.server.root, f), err);
-					process.exit(1);
-				} else {
-					console.log('uploaded', f );
-				}
-			})
-	}
+	scpConn.upload(from, to, (err, ok) => {
+		if (err) {
+			console.log('error uploading', upath.join(FEconfig.server.root, f), err);
+			process.exit(1);
+		} else {
+			console.log('uploaded', f);
+		}
+	})
+}
 
 process.on('SIGINT', () => {
 	sshConn.end();
 	scpConn.close();
+	if (watcher) watcher.close();
 	console.log('connection closed');
-	setTimeout(()=>{
+	setTimeout(() => {
 		process.exit(0);
-	},2000)
+	}, 2000)
 });
