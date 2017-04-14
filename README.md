@@ -7,6 +7,8 @@ FlyEdit makes your workflow straight to the target in a simple way
 
 # To Do list
 
-  - enable/disable delete directory project on close
+  - provide configuration file
+  - enable/disable delete local directory project on close
   - check if files are already downloaded and overwrite them only if they are older than remote
+  - handle lost server connection
   - find out other usefool functions
