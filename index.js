@@ -41,19 +41,9 @@ glob.sync(FEconfig.localRoot + '/**',{stat:true,nodir:true}).map(f=>{
 	localFiles[rel]= moment( statFile.mtime).unix();
 });
 if (typeof localFiles==='object') localFilesNames=Object.keys(localFiles);
-//console.log(localFiles);
-//process.exit()
+/*console.log(localFiles);
+process.exit();*/
 
-
-var remoteReadSubscription = remoteReadSubject.debounceTime(500).subscribe(x => {
-	if (files.length > 0) {
-		console.log('files in queue', files.length);
-		downloadFiles();
-	} else {
-		console.log('No file to download');
-		process.exit(0);
-	}
-});
 
 sshConn.on('ready', function() {
 
@@ -83,47 +73,60 @@ function getDirectory(dir, from) {
 	if (typeof from != 'string') from = FEconfig.server.root;
 
 	let dirr = upath.join(from, dir);
+	return new Promise((resolve,reject)=>{
+		sftp.readdir(dirr).then(list => {
 
-	sftp.readdir(dirr).then(list => {
+			//console.log(list[0])
+			//process.exit()
 
-		//console.log(list[0])
-		//process.exit()
+			let filepath = dirr.replace(FEconfig.server.root, '');
 
-		let filepath = dirr.replace(FEconfig.server.root, '');
+			let ff = list.filter(f => {
+				console.log('t',localFiles[f.filename],(localFilesNames.indexOf(f.filename)<0));
+				return (
+						f.attrs.mode == 33188
+						&& f.attrs.size < FEconfig.maxFileSize 
+						&&
+						(localFilesNames.indexOf(f.filename)<0) ||
+						(localFiles[f.filename]<f.attrs.mtime)
+					);
+			}).map(f => {
+				files.push(upath.join(filepath, f.filename));
+				return f.filename;
+			});
+			//fs.appendFile('./a.json',JSON.stringify(ff),(err)=>{});
+			//console.log(localFiles)
+			//process.exit();
 
-		let ff = list.filter(f => {
-			console.log('t',f.filename,localFiles[f.filename],(localFilesNames.indexOf(f.filename)<0));
-			return (
-					f.attrs.mode == 33188
-					&& f.attrs.size < FEconfig.maxFileSize 
-					&&
-					(localFilesNames.indexOf(f.filename)<0) ||
-					(localFiles[f.filename]<f.attrs.mtime)
-				);
-		}).map(f => {
-			files.push(upath.join(filepath, f.filename));
-			return f.filename;
+			let dirs = list.filter(f => {
+				return (f.attrs.mode == 16877);
+			}).map(d => {
+				return d.filename;
+			});
+			dirs = multimatch(dirs, excludeDirs);
+			dirs.map(d => {
+				queue++;
+				getDirectory(d, dirr);
+			});
+
+			/*let relative = (filepath).split('/').join('.');
+			let content = ff.concat(dirs);*/
+			queued++;
+
+			if (queued == queue)
+				if (files.length > 0) {
+					console.log('files in queue', files.length);
+					downloadFiles();
+				} else {
+					console.log('No file to download');
+					process.exit(0);
+				}
+
+
+		}).catch(err => {
+			console.log('error retrieving root folder ', err, dir, from);
 		});
-		fs.appendFile('./a.json',JSON.stringify(ff),(err)=>{});
-
-		let dirs = list.filter(f => {
-			return (f.attrs.mode == 16877);
-		}).map(d => {
-			return d.filename;
-		});
-		dirs = multimatch(dirs, excludeDirs);
-		dirs.map(d => {
-			getDirectory(d, dirr);
-		});
-
-		/*let relative = (filepath).split('/').join('.');
-		let content = ff.concat(dirs);*/
-
-		remoteReadSubject.next();
-
-	}).catch(err => {
-		console.log('error retrieving root folder ', err, dir, from);
-	});
+	})
 }
 
 function downloadFiles() {
@@ -141,6 +144,8 @@ function downloadFiles() {
 	});
 }
 
+var queue=1;
+var queued=0;
 function downloadFile(f, pct) {
 
 	let localPath = f.substring(0, f.lastIndexOf("/"));
@@ -166,7 +171,6 @@ function downloadFile(f, pct) {
 				if (err) {
 					console.log('error downloading', upath.join(FEconfig.server.root, f), err);
 					process.exit(1);
-
 				} else {
 					console.log('downloaded', f, pct);
 					remoteDwnlSubject.next();
