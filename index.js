@@ -45,12 +45,21 @@ if (typeof localFiles==='object') localFilesNames=Object.keys(localFiles);
 process.exit();*/
 
 
+sshConn.on('error', function(hadError) {
+	console.log('errrr',hadError)
+	if (hadError){
+		sshConn.connect(FEconfig.server);
+	}
+})
+
+// gestire disconnesione e connettere manualmente
 sshConn.on('ready', function() {
 
 	sshConn.sftp(function(err, sftpObj) {
 		if (err) throw (err);
 		console.log('Client :: ready');
-
+		//re
+		if (files.length==0)
 		sftp.readdir = function(dir) {
 			return new Promise(function(resolve, reject) {
 				sftpObj.readdir(dir, function(err, list) {
@@ -62,11 +71,14 @@ sshConn.on('ready', function() {
 				});
 			});
 		};
+		else watchProject();
 
 		getDirectory('/');
 	});
 
-}).connect(FEconfig.server);
+});
+
+sshConn.connect(FEconfig.server);
 
 function getDirectory(dir, from) {
 
@@ -203,21 +215,26 @@ function upload(f) {
 
 	let from = path.join(FEconfig.localRoot, f);
 	let to = upath.join(FEconfig.server.root, f);
+	try{
+		scpConn.upload(from, to, (err, ok) => {
+			if (err) {
+				console.log('error uploading', upath.join(FEconfig.server.root, f), err);
+				process.exit(1);
+			} else {
+				console.log('uploaded', f);
+			}
+		});
+	}
+	catch(err){
 
-	scpConn.upload(from, to, (err, ok) => {
-		if (err) {
-			console.log('error uploading', upath.join(FEconfig.server.root, f), err);
-			process.exit(1);
-		} else {
-			console.log('uploaded', f);
-		}
-	});
+	}
 }
 
 process.on('SIGINT', () => {
 	sshConn.end();
 	scpConn.close();
 	if (watcher) watcher.close();
+	watcher=undefined;
 	console.log('connection closed');
 
 	//rm.sync(FEconfig.localRoot);
