@@ -30,7 +30,7 @@ var remoteReadSubject = new rx.Subject();
 var remoteDwnlSubject = new rx.Subject();
 
 var excludeDirs = ["**", '!**/node_modules/**', '!node_modules', "!.git", "!dist"];
-var excludeFiles = [];
+var excludeFiles = ["**","!.DS_Store"];
 var localFiles = {};
 var localFilesNames=[];
 scpConn.defaults(FEconfig.server);
@@ -102,10 +102,10 @@ function getDirectory(dir, from) {
 						(localFilesNames.indexOf(f.filename)<0) ||
 						(localFiles[f.filename]<f.attrs.mtime)
 					);
-			}).map(f => {
-				files.push(upath.join(filepath, f.filename));
-				return f.filename;
-			});
+			}).map(f => {return f.filename;});
+			ff = multimatch(ff,excludeFiles);
+			ff.map(f=>{	files.push(upath.join(filepath, f));});
+
 			//fs.appendFile('./a.json',JSON.stringify(ff),(err)=>{});
 			//console.log(localFiles)
 			//process.exit();
