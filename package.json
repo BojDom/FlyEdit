@@ -4,12 +4,16 @@
   "description": "Edit remote files locally",
   "author": "BojDom",
   "private": false,
-  "scripts": {},
+  "scripts": {
+    "lint":"eslint --fix *.js"
+  },
   "dependencies": {
     "bluebird": "^3.5.0",
     "mkdirp": "^0.5.1",
+    "moment": "^2.18.1",
     "multimatch": "^2.1.0",
     "node-watch": "^0.5.2",
+    "rimraf": "^2.6.1",
     "rxjs": "^5.3.0",
     "scp2": "^0.5.0",
     "upath": "^1.0.0"
