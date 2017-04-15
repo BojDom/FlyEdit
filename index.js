@@ -10,8 +10,15 @@ const rx = require('rxjs');
 const multimatch = require('multimatch');
 const moment = require('moment');
 const rm = require('rimraf');
-var Promise = require('bluebird');
 
+var project='tubemp3'
+
+var argv = require('minimist')(process.argv.slice(2));
+if (argv.p) project=argv.p
+var FEconfig = require('./FlyEdit-config.js')(project);
+
+
+var Promise = require('bluebird');
 var sshClient = require('ssh2').Client;
 var scpClient = require('scp2').Client;
 var watcher;
@@ -21,7 +28,6 @@ var sshConn = new sshClient();
 var scpConn = new scpClient();
 var remoteReadSubject = new rx.Subject();
 var remoteDwnlSubject = new rx.Subject();
-var FEconfig = require('./FlyEdit-config.js');
 
 var excludeDirs = ["**", '!**/node_modules/**', '!node_modules', "!.git", "!dist"];
 var excludeFiles = [];
@@ -29,7 +35,6 @@ var localFiles = {};
 var localFilesNames=[];
 scpConn.defaults(FEconfig.server);
 
-// IMPOSTARE ULTIMA MODIFICA IN MILLISECONDI E VERIFICARE CON IL FILE REMOTO
 glob.sync(FEconfig.localRoot + '/**',{stat:true,nodir:true}).map(f=>{
 	let rel=f.replace(FEconfig.localRoot,'');
 	let statFile = fs.statSync(f);	
@@ -37,7 +42,6 @@ glob.sync(FEconfig.localRoot + '/**',{stat:true,nodir:true}).map(f=>{
 });
 if (typeof localFiles==='object') localFilesNames=Object.keys(localFiles);
 //console.log(localFiles);
-
 //process.exit()
 
 
@@ -73,8 +77,6 @@ sshConn.on('ready', function() {
 	});
 
 }).connect(FEconfig.server);
-
-
 
 function getDirectory(dir, from) {
 
@@ -136,11 +138,13 @@ function downloadFiles() {
 	downloadFile(files[n]);
 	var remoteDwnlSubscription = remoteDwnlSubject.subscribe(() => {
 		n++;
-		if (n < files.length) downloadFile(files[n], `${n} of ${files.length}`);
+		if (n < files.length)
+			downloadFile(files[n], `${n} of ${files.length}`);
 		else {
 			console.log('DOWNLOAD COMPLETE!', n);
-			watchProject();
-		}
+			if (typeof watcher === 'undefined' )
+				watchProject();
+			}
 	});
 }
 
@@ -190,7 +194,6 @@ function watchProject() {
 
 	console.log('Watching for changes in ',FEconfig.projectName)
 
-	if (typeof watcher === 'undefined' )
 	watcher = watch(FEconfig.localRoot, watchOptions, function(evt, name) {
 		console.log('evt',evt,name)
 		name = name.replace(FEconfig.localRoot, '');
