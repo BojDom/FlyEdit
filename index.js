@@ -100,31 +100,24 @@ function getDirectory(dir, from) {
 					(localFilesNames.indexOf(f.filename)<0) ||
 					(localFiles[f.filename]<f.attrs.mtime)
 				);
-
 		}).map(f => {
 			files.push(upath.join(filepath, f.filename));
 			return f.filename;
 		});
-
-		fs.appendFile('./a.json',JSON.stringify(ff),(err)=>{
-
-		});
+		fs.appendFile('./a.json',JSON.stringify(ff),(err)=>{});
 
 		let dirs = list.filter(f => {
 			return (f.attrs.mode == 16877);
 		}).map(d => {
 			return d.filename;
 		});
-
 		dirs = multimatch(dirs, excludeDirs);
-
 		dirs.map(d => {
 			getDirectory(d, dirr);
 		});
 
-		let relative = (filepath).split('/').join('.');
-
-		let content = ff.concat(dirs);
+		/*let relative = (filepath).split('/').join('.');
+		let content = ff.concat(dirs);*/
 
 		remoteReadSubject.next();
 
@@ -149,7 +142,6 @@ function downloadFiles() {
 }
 
 function downloadFile(f, pct) {
-
 
 	let localPath = f.substring(0, f.lastIndexOf("/"));
 	let filename = f.replace(localPath, '');
