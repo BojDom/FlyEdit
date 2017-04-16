@@ -66,15 +66,16 @@ sshConn.on('close', function(hadError) {
 sshConn.on('ready', function() {
 
 
-	setInterval(()=>{
+	var keepAlive = setInterval(()=>{
 	
-		sshConn.exec('uptime', function(err, stream) {
+		sshConn.exec('ls /', function(err, stream) {
 		    if (err) throw err;
 		    stream.on('close', function(code, signal) {
-		      console.log('keepAlive service ' + code + ', signal: ' , stream);
+		      console.log('keepAlive service ' + code + ', signal: ' , Object.keys(stream));
 		      //conn.end();
 		    }).stderr.on('data', function(data) {
 		      console.log('STDERR: Stream' + data);
+		      clearInterval(keepAlive);
 		    });
 		});
 	},60000);
