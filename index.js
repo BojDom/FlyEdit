@@ -48,12 +48,40 @@ process.exit();*/
 sshConn.on('error', function(hadError) {
 	console.log('errrr',hadError)
 	if (hadError){
+		console.log('error1');
 		sshConn.connect(FEconfig.server);
 	}
 })
 
+sshConn.on('close', function(hadError) {
+	console.log('errrr',hadError)
+	if (hadError){
+		console.log('error2');
+		sshConn.connect(FEconfig.server);
+	}
+})
+
+
 // gestire disconnesione e connettere manualmente
 sshConn.on('ready', function() {
+
+
+	setInterval(()=>{
+	
+		sshConn.exec('uptime', function(err, stream) {
+		    if (err) throw err;
+		    stream.on('close', function(code, signal) {
+		      console.log('keepAlive service ' + code + ', signal: ' , stream);
+		      //conn.end();
+		    }).stderr.on('data', function(data) {
+		      console.log('STDERR: Stream' + data);
+		    });
+		});
+	},60000);
+
+	sshConn.on('data', function(data) {
+	      console.log('STDERR: ' + data);
+	});
 
 	sshConn.sftp(function(err, sftpObj) {
 		if (err) throw (err);
@@ -94,7 +122,7 @@ function getDirectory(dir, from) {
 			let filepath = dirr.replace(FEconfig.server.root, '');
 
 			let ff = list.filter(f => {
-				console.log('t',localFiles[f.filename],(localFilesNames.indexOf(f.filename)<0));
+				console.log('t',f.filename,(localFilesNames.indexOf(f.filename)<0));
 				return (
 						f.attrs.mode == 33188
 						&& f.attrs.size < FEconfig.maxFileSize 
@@ -226,7 +254,7 @@ function upload(f) {
 		});
 	}
 	catch(err){
-
+		console.log('Lost connection while uploading ',f)
 	}
 }
 
