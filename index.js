@@ -17,7 +17,6 @@ var argv = require('minimist')(process.argv.slice(2));
 if (argv.p) project=argv.p
 var FEconfig = require('./FlyEdit-config.js')(project);
 
-
 var Promise = require('bluebird');
 var sshClient = require('ssh2').Client;
 var scpClient = require('scp2').Client;
@@ -46,7 +45,7 @@ process.exit();*/
 
 
 sshConn.on('error', function(hadError) {
-	console.log('errrr',hadError)
+	console.log('err1',hadError)
 	if (hadError){
 		console.log('error1');
 		sshConn.connect(FEconfig.server);
@@ -54,7 +53,7 @@ sshConn.on('error', function(hadError) {
 })
 
 sshConn.on('close', function(hadError) {
-	console.log('errrr',hadError)
+	console.log('err2',hadError)
 	if (hadError){
 		console.log('error2');
 		sshConn.connect(FEconfig.server);
@@ -78,7 +77,7 @@ sshConn.on('ready', function() {
 		      clearInterval(keepAlive);
 		    });
 		});
-	},60000);
+	},5000);
 
 	sshConn.on('data', function(data) {
 	      console.log('STDERR: ' + data);
