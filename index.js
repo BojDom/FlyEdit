@@ -34,14 +34,14 @@ var localFiles = {};
 var localFilesNames=[];
 scpConn.defaults(FEconfig.server);
 
-glob.sync(FEconfig.localRoot + '/**',{stat:true,nodir:true}).map(f=>{
-	let rel=f.replace(FEconfig.localRoot,'');
+glob.sync(FEconfig.localRoot + '/**',{stat:true,nodir:true,dot:true}).map(f=>{
+	let rel=f.replace(upath.normalize(FEconfig.localRoot),'');
 	let statFile = fs.statSync(f);	
 	localFiles[rel]= moment( statFile.mtime).unix();
 });
 if (typeof localFiles==='object') localFilesNames=Object.keys(localFiles);
-/*console.log(localFiles);
-process.exit();*/
+//console.log(localFiles);
+//process.exit();
 
 
 sshConn.on('error', function(hadError) {
@@ -70,14 +70,15 @@ sshConn.on('ready', function() {
 		sshConn.exec('ls /', function(err, stream) {
 		    if (err) throw err;
 		    stream.on('close', function(code, signal) {
-		      console.log('keepAlive service ' + code + ', signal: ' , Object.keys(stream));
+		    	console.log('keepalive')
+		     // console.log('keepAlive service ' + code + ', signal: ' , Object.keys(stream));
 		      //conn.end();
 		    }).stderr.on('data', function(data) {
 		      console.log('STDERR: Stream' + data);
 		      clearInterval(keepAlive);
 		    });
 		});
-	},5000);
+	},30000);
 
 	sshConn.on('data', function(data) {
 	      console.log('STDERR: ' + data);
@@ -123,6 +124,8 @@ function getDirectory(dir, from) {
 
 			let ff = list.filter(f => {
 				console.log('t',f.filename,(localFilesNames.indexOf(f.filename)<0));
+					//process.exit()
+
 				return (
 						f.attrs.mode == 33188
 						&& f.attrs.size < FEconfig.maxFileSize 
@@ -131,9 +134,9 @@ function getDirectory(dir, from) {
 						(localFiles[f.filename]<f.attrs.mtime)
 					);
 			}).map(f => {return f.filename;});
+
 			ff = multimatch(ff,excludeFiles);
 			ff.map(f=>{	files.push(upath.join(filepath, f));});
-
 			//fs.appendFile('./a.json',JSON.stringify(ff),(err)=>{});
 			//console.log(localFiles)
 			//process.exit();
@@ -155,7 +158,7 @@ function getDirectory(dir, from) {
 
 			if (queued == queue)
 				if (files.length > 0) {
-					console.log('files in queue', files.length);
+					console.log('files in queue', files);
 					downloadFiles();
 				} else {
 					console.log('No file to download');
