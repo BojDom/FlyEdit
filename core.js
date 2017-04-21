@@ -254,11 +254,11 @@ function upload(relativePath) {
 				console.log('error uploading', upath.join(FEconfig.server.root, relativePath), err);
 				process.exit(1);
 			} else {
-				console.log('uploaded', f);
+				console.log('uploaded', relativePath);
 			}
 		});
 	} catch (err) {
-		console.log('Lost connection while uploading ', f);
+		console.log('Lost connection while uploading ', relativePath);
 	}
 }
 
