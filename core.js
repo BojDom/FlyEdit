@@ -24,13 +24,14 @@ var remoteDwnlSubject = new rx.Subject();
 
 var argv = require('minimist')(process.argv.slice(2));
 if (argv.p) project=argv.p;
+else process.exit(1);
 
 //scegliere il progetto lanciato dal comando
 // lanciare in pm2 
-var FEconfig = require('./FlyEdit-config.js');
+var FEconfig = require('./FlyEdit-config')[argv.p];
 
-var excludeDirs = ["**", '!**/node_modules/**', '!node_modules', "!.git", "!dist"];
-var excludeFiles = ["**","!.DS_Store"];
+var excludeDirs = FEconfig.excludeirs || ["**", '!**/node_modules/**', '!node_modules', "!.git", "!dist"];
+var excludeFiles =  FEconfig.excludeFiles || ["**","!.DS_Store"];
 var localFiles = {};
 var localFilesNames=[];
 scpConn.defaults(FEconfig.server);
@@ -41,7 +42,7 @@ glob.sync(FEconfig.localRoot + '/**',{stat:true,nodir:true,dot:true}).map(f=>{
 	localFiles[rel]= moment( statFile.mtime).unix();
 });
 if (typeof localFiles==='object') localFilesNames=Object.keys(localFiles);
-//console.log(localFiles);
+//console.log(localFilesNames);
 //process.exit();
 
 
@@ -117,35 +118,36 @@ function getDirectory(dir, from) {
 	return new Promise((resolve,reject)=>{
 		sftp.readdir(dirr).then(list => {
 
-			//console.log(list[0])
-			//process.exit()
+
+			console.log(localFilesNames.indexOf(list[8].filename));
+			process.exit();
 
 			let filepath = dirr.replace(FEconfig.server.root, '');
-
-			let ff = list.filter(f => {
-				console.log('t',f.filename,(localFilesNames.indexOf(f.filename)<0));
+			let ff = [];
+			let dirs = [];
+			list.map(f => {
+				console.log('t',f.filename,localFiles[f.filename]);
 					//process.exit()
 
-				return (
+				if (
 						f.attrs.mode == 33188
 						&& f.attrs.size < FEconfig.maxFileSize 
 						&&
 						(localFilesNames.indexOf(f.filename)<0) ||
 						(localFiles[f.filename]<f.attrs.mtime)
-					);
-			}).map(f => {return f.filename;});
+					) 
+				ff.push(f.filename);
+			});
 
 			ff = multimatch(ff,excludeFiles);
 			ff.map(f=>{	files.push(upath.join(filepath, f));});
-			//fs.appendFile('./a.json',JSON.stringify(ff),(err)=>{});
-			//console.log(localFiles)
-			//process.exit();
 
-			let dirs = list.filter(f => {
+/*			let dirs = list.filter(f => {
 				return (f.attrs.mode == 16877);
 			}).map(d => {
 				return d.filename;
-			});
+			});*/
+
 			dirs = multimatch(dirs, excludeDirs);
 			dirs.map(d => {
 				queue++;
