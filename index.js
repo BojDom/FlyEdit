@@ -8,7 +8,7 @@ if (argv._)
 		console.log('starting',project)
 		pm2.start({
 			script:'./core.js',
-			exec_mode : 'cluster', 
+			exec_mode : 'fork', 
 			args:'-p '+project,
 		},(err)=>{
 		console.log('err lunching pm2 '+project,err)
