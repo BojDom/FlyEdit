@@ -26,6 +26,11 @@ var argv = require('minimist')(process.argv.slice(2));
 if (argv.p) project = argv.p;
 else process.exit(1);
 
+function is(type,mode){
+	if (typeof mode=='number') mode=mode.toString();
+	return (type=='file') ? (mode.toString().substr(0,3)=='331') : (mode.toString().substr(0,3)=='168')
+}
+
 //scegliere il progetto lanciato dal comando
 // lanciare in pm2 
 var FEconfig = require('./FlyEdit-config')[argv.p];
@@ -131,11 +136,11 @@ function getDirectory(dir, from) {
 			let dirs = [];
 			list.map(f => {
 
-				if (f.attrs.mode == 33188 && f.attrs.size < FEconfig.maxFileSize) {
+				if ( is('file',f.attrs.mode) && f.attrs.size < FEconfig.maxFileSize) {
 					f.filename = upath.join(filepath, f.filename);
 					if ((localFilesNames.indexOf(f.filename) < 0) || (localFiles[f.filename] < f.attrs.mtime))
 						ff.push(f.filename);
-				} else if (f.attrs.mode == 16877)
+				} else if (is('dir',f.attrs.mode))
 					dirs.push(f.filename)
 			});
 
@@ -233,6 +238,7 @@ function watchProject() {
 	watcher = watch.createMonitor(FEconfig.localRoot, function(monitor) {
 
 					monitor.on("created", function(f, stat) {
+						if (is('file',stat.mode))
 						upload(f.replace(FEconfig.localRoot,''))
 					})
 					monitor.on("changed", function(f, curr, prev) {
