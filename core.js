@@ -12,7 +12,7 @@ const moment = require('moment');
 const rm = require('rimraf');
 const sshClient = require('ssh2').Client;
 const scpClient = require('scp2').Client;
-
+const green = "\x1b[32m%s\x1b[0m"
 var Promise = require('bluebird');
 var watcher;
 var sftp = {};
@@ -30,6 +30,8 @@ function is(type,mode){
 	if (typeof mode=='number') mode=mode.toString();
 	return (type=='file') ? (mode.toString().substr(0,2)=='33') : (mode.toString().substr(0,3)=='168')
 }
+
+
 
 //scegliere il progetto lanciato dal comando
 // lanciare in pm2 
@@ -261,7 +263,7 @@ function upload(relativePath) {
 				console.log('error uploading', upath.join(FEconfig.server.root, relativePath), err);
 				process.exit(1);
 			} else {
-				console.log('uploaded', relativePath);
+				console.log(green,relativePath,'uploaded');
 			}
 		});
 	} catch (err) {
