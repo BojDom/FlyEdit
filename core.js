@@ -28,7 +28,7 @@ else process.exit(1);
 
 function is(type,mode){
 	if (typeof mode=='number') mode=mode.toString();
-	return (type=='file') ? (mode.toString().substr(0,3)=='331') : (mode.toString().substr(0,3)=='168')
+	return (type=='file') ? (mode.toString().substr(0,2)=='33') : (mode.toString().substr(0,3)=='168')
 }
 
 //scegliere il progetto lanciato dal comando
@@ -237,7 +237,8 @@ function watchProject() {
 
 	watcher = watch.createMonitor(FEconfig.localRoot, function(monitor) {
 
-					monitor.on("created", function(f, stat) {
+					monitor.on("created", function(f,stat) {
+						console.log('new file',f,stat)
 						if (is('file',stat.mode))
 						upload(f.replace(FEconfig.localRoot,''))
 					})
