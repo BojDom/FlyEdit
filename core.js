@@ -216,10 +216,10 @@ function downloadFiles(n) {
 function uploadFiles(n) {
 
     n = (!n) ? 0 : n;
-    console.log('upload n ',n);
+    console.log('upload n ', n);
     upload(toUpload[n]).then(() => {
         n++;
-		if (n < toUpload.length)
+        if (n < toUpload.length)
             uploadFiles(n);
         else {
             console.log('Uploads COMPLETE!', n);
@@ -233,41 +233,40 @@ var queued = 0;
 
 function downloadFile(f, pct) {
 
-	return new Promise((resolve,reject)=>{
-	    let localPath = f.substring(0, f.lastIndexOf("/"));
-	    let filename = f.replace(localPath, '');
+    return new Promise((resolve, reject) => {
+        let localPath = f.substring(0, f.lastIndexOf("/"));
+        let filename = f.replace(localPath, '');
 
-	    localPath = path.join(FEconfig.localRoot, localPath);
+        localPath = path.join(FEconfig.localRoot, localPath);
 
-	    if (localPath.length > 0 && !fs.existsSync(localPath))
-	        mkdirp(localPath, (err, ok) => {
-	            if (err) {
-	                console.log('error creating local folder', localPath);
-	                process.exit(1);
-	            }
-	            actualDownload();
-	        });
-	    else actualDownload();
+        if (localPath.length > 0 && !fs.existsSync(localPath))
+            mkdirp(localPath, (err, ok) => {
+                if (err) {
+                    console.log('error creating local folder', localPath);
+                    process.exit(1);
+                }
+                actualDownload();
+            });
+        else actualDownload();
 
-	    function actualDownload() {
-	        return scpConn.download(
-	            upath.join(FEconfig.server.root, f),
-	            path.join(FEconfig.localRoot, f),
-	            (err,ok)=>{
+        function actualDownload() {
+            return scpConn.download(
+                upath.join(FEconfig.server.root, f),
+                path.join(FEconfig.localRoot, f),
+                (err, ok) => {
 
-		    		if (err) {
-		    			console.warn('error downloading',f);
-		    			reject();
-		    		}
-		    		else {
-		    			console.log(green,'downloaded',green,f);
-		    			resolve();
-		    		}
-    	
-	            }
-	        );
-	    };
-	});
+                    if (err) {
+                        console.warn('error downloading', f);
+                        reject();
+                    } else {
+                        console.log(green, 'downloaded', green, f);
+                        resolve();
+                    }
+
+                }
+            );
+        };
+    });
 }
 
 function upload(relativePath) {
@@ -275,17 +274,16 @@ function upload(relativePath) {
     let from = path.join(FEconfig.localRoot, relativePath);
     let to = upath.join(FEconfig.server.root, relativePath);
 
-    return new Promise((resolve,reject)=>{
-    	scpConn.upload(from, to,(err,ok)=>{
-    		if (err) {
-    			console.warn('error uploading',relativePath);
-    			reject();
-    		}
-    		else {
-    			console.log('uploaded',green,relativePath);
-    			resolve();
-    		}
-    	});
+    return new Promise((resolve, reject) => {
+        scpConn.upload(from, to, (err, ok) => {
+            if (err) {
+                console.warn('error uploading', relativePath);
+                reject();
+            } else {
+                console.log('uploaded', green, relativePath);
+                resolve();
+            }
+        });
     });
 }
 
