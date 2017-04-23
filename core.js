@@ -108,20 +108,18 @@ sshConn.on('ready', function() {
     sshConn.sftp(function(err, sftpObj) {
         if (err) throw (err);
         console.log('Client :: ready');
-        //re
-        if (files.length == 0)
-            sftp.readdir = function(dir) {
-                return new Promise(function(resolve, reject) {
-                    sftpObj.readdir(dir, function(err, list) {
-                        if (err) {
-                            reject(err);
-                        } else {
-                            resolve(list);
-                        }
-                    });
+
+        sftp.readdir = function(dir) {
+            return new Promise(function(resolve, reject) {
+                sftpObj.readdir(dir, function(err, list) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(list);
+                    }
                 });
-            };
-        else watchProject();
+            });
+        };
 
         getDirectory('/');
     });
@@ -144,22 +142,21 @@ function getDirectory(dir, from) {
             let dirs = [];
             list.map(f => {
 
-                /*				if (/render/.test(f.filename)) {
-                						console.log(f.attrs.mtime,localFiles);
-                						process.exit(1)
-                				}*/
-
                 if (is('file', f.attrs.mode) && f.attrs.size < FEconfig.maxFileSize) {
                     f.filename = upath.join(filepath, f.filename);
 
                     if (localFilesNames.indexOf(f.filename) > -1) {
                         console.log(f.filename, localFiles[f.filename], f.attrs.mtime);
-                        if (localFiles[f.filename] <= f.attrs.mtime)
+                        if (localFiles[f.filename] < f.attrs.mtime) {
                             ff.push(f.filename);
-                        else {
+                            localFiles[f.filename] = f.attrs.mtime;
+                        } else if (localFiles[f.filename] > f.attrs.mtime) {
                             toUpload.push(f.filename);
                         }
-                    } else ff.push(f.filename);
+                    } else {
+                        ff.push(f.filename);
+                        localFiles[f.filename] = f.attrs.mtime;
+                    }
                 } else if (is('dir', f.attrs.mode))
                     dirs.push(f.filename);
             });
@@ -179,17 +176,13 @@ function getDirectory(dir, from) {
             queued++;
 
             if (queued == queue) {
-                if (files.length > 0) {
-                    console.log('files in queue', files);
-                    //process.exit();
-                    downloadFiles();
-                } else {
-                    console.log('No file to download');
-                    watchProject();
-                    //process.exit(0);
-                }
+
+                console.log('files to download', files);
                 console.log('files to upload', toUpload.length);
+
                 if (toUpload.length > 0) uploadFiles();
+                if (files.length > 0)    downloadFiles();
+                else watchProject();
             }
 
         }).catch(err => {
@@ -250,21 +243,23 @@ function downloadFile(f, pct) {
         else actualDownload();
 
         function actualDownload() {
-            return scpConn.download(
-                upath.join(FEconfig.server.root, f),
-                path.join(FEconfig.localRoot, f),
-                (err, ok) => {
+            let from = upath.join(FEconfig.server.root, f);
+            let to = path.join(FEconfig.localRoot, f);
 
-                    if (err) {
-                        console.warn('error downloading', f);
-                        reject();
-                    } else {
-                        console.log(green, 'downloaded', green, f);
-                        resolve();
-                    }
-
+            return scpConn.download(from, to, (err) => {
+                if (err) {
+                    console.warn('error downloading', f);
+                    reject();
+                } else {
+                    console.log('downloaded', green, f);
+                    resolve();
+                    // change the localFile created time so it will not be uploaded as an edited file
+                    fs.open(to, 'r', (err, fd) => {
+                        fs.futimesSync(fd, localFiles[f], localFiles[f]);
+                    });
                 }
-            );
+
+            });
         };
     });
 }
