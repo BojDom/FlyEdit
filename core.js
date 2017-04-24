@@ -35,7 +35,7 @@ function is(type, mode) {
 }
 
 function isOSWin64() {
-  return process.arch === 'x64' || process.env.hasOwnProperty('PROCESSOR_ARCHITEW6432');
+    return /^win/.test(process.platform);
 }
 
 
@@ -139,7 +139,10 @@ function getDirectory(dir, from) {
     let dirr = upath.join(from, dir);
     return new Promise((resolve, reject) => {
         sftp.readdir(dirr).then(list => {
-
+            var addToQueue = (f) => {
+                ff.push(f.filename);
+                localFiles[f.filename] = f.attrs.mtime;
+            };
 
             let filepath = dirr.replace(FEconfig.server.root, '');
             let ff = [];
@@ -152,14 +155,12 @@ function getDirectory(dir, from) {
                     if (localFilesNames.indexOf(f.filename) > -1) {
                         console.log(f.filename, localFiles[f.filename], f.attrs.mtime);
                         if (localFiles[f.filename] < f.attrs.mtime) {
-                            ff.push(f.filename);
-                            localFiles[f.filename] = f.attrs.mtime;
+                            addToQueue(f);
                         } else if (localFiles[f.filename] > f.attrs.mtime) {
                             toUpload.push(f.filename);
                         }
                     } else {
-                        ff.push(f.filename);
-                        localFiles[f.filename] = f.attrs.mtime;
+                        addToQueue(f);
                     }
                 } else if (is('dir', f.attrs.mode))
                     dirs.push(f.filename);
@@ -185,7 +186,7 @@ function getDirectory(dir, from) {
                 console.log('files to upload', toUpload.length);
 
                 if (toUpload.length > 0) uploadFiles();
-                if (files.length > 0)    downloadFiles();
+                if (files.length > 0) downloadFiles();
                 else watchProject();
             }
 
@@ -257,15 +258,16 @@ function downloadFile(f, pct) {
                 } else {
                     console.log('downloaded', green, f);
                     resolve();
-                    try{
-                    // change the localFile created time so it will not be uploaded as an edited file
+                    try {
+                        // change the localFile created time so it will not be uploaded as an edited file
                         fs.open(to, 'r', (fsOpenErr, fd) => {
-                            if (!fsOpenErr&&!isOSWin64())
+                            if (!fsOpenErr && !isOSWin64())
                                 fs.futimesSync(fd, localFiles[f], localFiles[f]);
-                            else console.log('fs.open error',fsOpenErr)
+                            else console.log('fs.open error', fsOpenErr)
                         });
+                    } catch (e) {
+                        console.log('error setting last modified time ', e)
                     }
-                    catch(e){console.log('error setting last modified time ',e)}
                 }
 
             });
