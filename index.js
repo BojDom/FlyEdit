@@ -16,10 +16,12 @@ if (argv._)
 				name:project,
 				args:'-p '+project,
 			},(err)=>{
-				console.log(' is err ?  '+project,err);
 				n++;
 				if (n<argv._.length)
-				start(argv._[n])
+					start(argv._[n])
+				else 
+					console.log('to see transfer logs use pm2 logs "project_name" ');
+					process.exit(0)
 			})
 		}
 

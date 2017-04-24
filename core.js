@@ -1,3 +1,4 @@
+"use strict";
 const upath = require('upath');
 const path = require('path');
 const scp = require('scp2');
@@ -25,7 +26,7 @@ var remoteDwnlSubject = new rx.Subject();
 
 
 var argv = require('minimist')(process.argv.slice(2));
-if (argv.p) project = argv.p;
+if (argv.p) var project = argv.p;
 else process.exit(1);
 
 function is(type, mode) {
@@ -33,6 +34,9 @@ function is(type, mode) {
     return (type == 'file') ? (mode.toString().substr(0, 2) == '33') : (mode.toString().substr(0, 3) == '168');
 }
 
+function isOSWin64() {
+  return process.arch === 'x64' || process.env.hasOwnProperty('PROCESSOR_ARCHITEW6432');
+}
 
 
 //scegliere il progetto lanciato dal comando
@@ -253,10 +257,15 @@ function downloadFile(f, pct) {
                 } else {
                     console.log('downloaded', green, f);
                     resolve();
+                    try{
                     // change the localFile created time so it will not be uploaded as an edited file
-                    fs.open(to, 'r', (err, fd) => {
-                        fs.futimesSync(fd, localFiles[f], localFiles[f]);
-                    });
+                        fs.open(to, 'r', (fsOpenErr, fd) => {
+                            if (!fsOpenErr&&!isOSWin64())
+                                fs.futimesSync(fd, localFiles[f], localFiles[f]);
+                            else console.log('fs.open error',fsOpenErr)
+                        });
+                    }
+                    catch(e){console.log('error setting last modified time ',e)}
                 }
 
             });

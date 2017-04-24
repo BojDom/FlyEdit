@@ -3,17 +3,17 @@ const path=require('path'),
 	fs=require('fs');
 
 
-module.exports=(project)=>{
+module.exports=[
 
-	return {
-		projectName:project,
-		localRoot:path.join(__dirname,'/projects/',project,'/'),
+	project1: {
+		projectName:"p1",
+		localRoot:path.join(__dirname,'/projects/p1/'),
 		maxFileSize:2000000, // 2 mb
 		server:{
-			root:upath.join('/remote/project/parent_dir/',project,'/'),
+			root:'/remote/project/folder/root/',
 			port:22,
 			host:'__fill_data_here__',
 			username:'__fill_data_here__',
 			password:'__fill_data_here__'
 		}
-}};
+]
