@@ -19,9 +19,10 @@ if (argv._)
 				n++;
 				if (n<argv._.length)
 					start(argv._[n])
-				else 
-					console.log('to see transfer logs use pm2 logs "project_name" ');
-					process.exit(0)
+				else {
+						console.log('to see transfer logs use pm2 logs "project_name" ');
+						process.exit(0)
+				}
 			})
 		}
 
