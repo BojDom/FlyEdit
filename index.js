@@ -6,7 +6,7 @@ var argv = require('minimist')(process.argv.slice(2));
 var n =0;
 
 if (argv._) 
-	start(argv._[n]);
+	start(argv._[n])
 
 
 		function start(project) {
@@ -18,11 +18,11 @@ if (argv._)
 			},(err)=>{
 				n++;
 				if (n<argv._.length)
-					start(argv._[n]);
+					start(argv._[n])
 				else {
-					console.log('to see transfer logs use pm2 logs "project_name" ');
-					process.exit(0);
+						console.log('to see transfer logs use pm2 logs "project_name" ');
+						process.exit(0)
 				}
-			});
+			})
 		}
 
