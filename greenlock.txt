@@ -1,0 +1,6 @@
+greenlock certonly \
+  --agree-tos --email admin@friendsmusic.pro \
+  --webroot --webroot-path /dist/tubemp3 \
+  --config-dir /etc/nginx/ssl/tubemp3 \
+  --domains tubemp3.co,api.tubemp3.co \
+  --server https://acme-v01.api.letsencrypt.org/directory
