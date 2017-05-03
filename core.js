@@ -65,7 +65,7 @@ fs.access(tmpFolder, fs.constants.W_OK, (err) => {
 	}
 });*/
 function makeTmpFolder() {
-	sshConn.exec('mkdir -p ',tmpFolder,(err,out)=>{});
+	sshConn.exec('mkdir -p '+tmpFolder,(err,out)=>{});
 }
 
 var localFiles = {};
