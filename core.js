@@ -33,7 +33,7 @@ function is(type, mode) {
 	if (typeof mode == 'number') mode = mode.toString();
 	return (type == 'file') ? (mode.toString().substr(0, 2) == '33') : (mode.toString().substr(0, 3) == '168');
 }
-
+// windows seems to forbid the editing of the last modification time
 function isOSWin64() {
 	return /^win/.test(process.platform);
 }
@@ -64,6 +64,9 @@ fs.access(tmpFolder, fs.constants.W_OK, (err) => {
 		});
 	}
 });*/
+function makeTmpFolder() {
+	sshConn.exec('mkdir -p ',tmpFolder,(err,out)=>{});
+}
 
 var localFiles = {};
 var localFilesNames = [];
@@ -102,6 +105,8 @@ sshConn.on('close', function(hadError) {
 
 // gestire disconnesione e connettere manualmente
 sshConn.on('ready', function() {
+
+	makeTmpFolder();
 
 	var keepAlive = setInterval(() => {
 
