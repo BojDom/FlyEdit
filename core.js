@@ -30,12 +30,12 @@ if (argv.p) var project = argv.p;
 else process.exit(1);
 
 function is(type, mode) {
-	if (typeof mode == 'number') mode = mode.toString();
-	return (type == 'file') ? (mode.toString().substr(0, 2) == '33') : (mode.toString().substr(0, 3) == '168');
+		if (typeof mode == 'number') mode = mode.toString();
+		return (type == 'file') ? (mode.toString().substr(0, 2) == '33') : (mode.toString().substr(0, 3) == '168');
 }
 // windows seems to forbid the editing of the last modification time
 function isOSWin64() {
-	return /^win/.test(process.platform);
+		return /^win/.test(process.platform);
 }
 
 
@@ -64,22 +64,20 @@ fs.access(tmpFolder, fs.constants.W_OK, (err) => {
 		});
 	}
 });*/
-function makeTmpFolder() {
-	sshConn.exec('mkdir -p '+tmpFolder,(err,out)=>{});
-}
+
 
 var localFiles = {};
 var localFilesNames = [];
 scpConn.defaults(FEconfig.server);
 
 glob.sync(FEconfig.localRoot + '/**', {
-	stat: true,
-	nodir: true,
-	dot: true,
+		stat: true,
+		nodir: true,
+		dot: true,
 }).map(f => {
-	let rel = f.replace(upath.normalize(FEconfig.localRoot), '');
-	let statFile = fs.statSync(f);
-	localFiles[rel] = moment(statFile.mtime).unix();
+		let rel = f.replace(upath.normalize(FEconfig.localRoot), '');
+		let statFile = fs.statSync(f);
+		localFiles[rel] = moment(statFile.mtime).unix();
 });
 if (typeof localFiles === 'object') localFilesNames = Object.keys(localFiles);
 /*console.log(localFiles);
@@ -87,68 +85,66 @@ process.exit();
 */
 
 sshConn.on('error', function(hadError) {
-	console.log('err1', hadError);
-	if (hadError) {
-		console.log('error1');
-		sshConn.connect(FEconfig.server);
-	}
+		console.log('err1', hadError);
+		if (hadError) {
+				console.log('error1');
+				sshConn.connect(FEconfig.server);
+		}
 });
 
 sshConn.on('close', function(hadError) {
-	console.log('err2', hadError);
-	if (hadError) {
-		console.log('error2');
-		sshConn.connect(FEconfig.server);
-	}
+		console.log('err2', hadError);
+		if (hadError) {
+				console.log('error2');
+				sshConn.connect(FEconfig.server);
+		}
 });
 
 
 // gestire disconnesione e connettere manualmente
 sshConn.on('ready', function() {
 
-	makeTmpFolder();
+		var keepAlive = setInterval(() => {
 
-	var keepAlive = setInterval(() => {
+				sshConn.exec('date -R', function(err, stream) {
+						if (err) throw err;
+						stream.on('close', function(code, signal) {
+								//console.log('Stream :: close :: code: ' + code + ', signal: ' + signal);
+								//conn.end();
+						}).on('data', function(data) {
+								if (data) {
+										let format = "ddd, MM MMM YYYY HH:mm:ss [GMT]";
+										let now = moment().format(format);
+										let serverDate = moment.utc(data.toString()).format(format);
 
-		sshConn.exec('date -R', function(err, stream) {
-			if (err) throw err;
-			stream.on('close', function(code, signal) {
-				//console.log('Stream :: close :: code: ' + code + ', signal: ' + signal);
-				//conn.end();
-			}).on('data', function(data) {
-				if (data) {
-					let format = "ddd, MM MMM YYYY HH:mm:ss [GMT]";
-					let now = moment().format(format);
-					let serverDate = moment.utc(data.toString()).format(format);
-
-					console.log('diff', now, serverDate);
-				}
-			}).stderr.on('data', function(data) {
-				console.log('STDERR: ' + data);
-			});
-		});
-
-	}, 120000);
-
-
-	sshConn.sftp(function(err, sftpObj) {
-		if (err) throw (err);
-		console.log('Client :: ready');
-
-		sftp.readdir = function(dir) {
-			return new Promise(function(resolve, reject) {
-				sftpObj.readdir(dir, function(err, list) {
-					if (err) {
-						reject(err);
-					} else {
-						resolve(list);
-					}
+										console.log('diff', now, serverDate);
+								}
+						}).stderr.on('data', function(data) {
+								console.log('STDERR: ' + data);
+						});
 				});
-			});
-		};
 
-		getDirectory('/');
-	});
+		}, 120000);
+
+
+		sshConn.sftp(function(err, sftpObj) {
+				if (err) throw (err);
+				console.log('Client :: ready');
+
+				sftp.readdir = function(dir) {
+						return new Promise(function(resolve, reject) {
+								sftpObj.readdir(dir, function(err, list) {
+										if (err) {
+												reject(err);
+										} else {
+												resolve(list);
+										}
+								});
+						});
+				};
+
+				getDirectory('/');
+		});
 
 });
 
@@ -156,95 +152,95 @@ sshConn.connect(FEconfig.server);
 
 function getDirectory(dir, from) {
 
-	if (typeof from != 'string') from = FEconfig.server.root;
+		if (typeof from != 'string') from = FEconfig.server.root;
 
-	let dirr = upath.join(from, dir);
-	return new Promise((resolve, reject) => {
-		sftp.readdir(dirr).then(list => {
-			var addToQueue = (f) => {
-				ff.push(f.filename);
-				localFiles[f.filename] = f.attrs.mtime;
-			};
+		let dirr = upath.join(from, dir);
+		return new Promise((resolve, reject) => {
+				sftp.readdir(dirr).then(list => {
+						var addToQueue = (f) => {
+								ff.push(f.filename);
+								localFiles[f.filename] = f.attrs.mtime;
+						};
 
-			let filepath = dirr.replace(FEconfig.server.root, '');
-			let ff = [];
-			let dirs = [];
-			list.map(f => {
+						let filepath = dirr.replace(FEconfig.server.root, '');
+						let ff = [];
+						let dirs = [];
+						list.map(f => {
 
-				if (is('file', f.attrs.mode) && f.attrs.size < FEconfig.maxFileSize) {
-					f.filename = upath.join(filepath, f.filename);
+								if (is('file', f.attrs.mode) && f.attrs.size < FEconfig.maxFileSize) {
+										f.filename = upath.join(filepath, f.filename);
 
-					if (localFilesNames.indexOf(f.filename) > -1) {
-						console.log(f.filename, localFiles[f.filename], f.attrs.mtime);
-						if (localFiles[f.filename] < f.attrs.mtime) {
-							addToQueue(f);
-						} else if (localFiles[f.filename] > f.attrs.mtime) {
-							toUpload.push(f.filename);
+										if (localFilesNames.indexOf(f.filename) > -1) {
+												console.log(f.filename, localFiles[f.filename], f.attrs.mtime);
+												if (localFiles[f.filename] < f.attrs.mtime) {
+														addToQueue(f);
+												} else if (localFiles[f.filename] > f.attrs.mtime) {
+														toUpload.push(f.filename);
+												}
+										} else {
+												addToQueue(f);
+										}
+								} else if (is('dir', f.attrs.mode))
+										dirs.push(f.filename);
+						});
+
+
+						ff = multimatch(ff, excludeFiles);
+						ff.map(f => {
+								files.push(f);
+						});
+
+						dirs = multimatch(dirs, excludeDirs);
+						dirs.map(d => {
+								queue++;
+								getDirectory(d, dirr);
+						});
+
+						queued++;
+
+						if (queued == queue) {
+
+								console.log('files to download', files);
+								console.log('files to upload', toUpload.length);
+
+								if (toUpload.length > 0) uploadFiles();
+								if (files.length > 0) downloadFiles();
+								else watchProject();
 						}
-					} else {
-						addToQueue(f);
-					}
-				} else if (is('dir', f.attrs.mode))
-					dirs.push(f.filename);
-			});
 
-
-			ff = multimatch(ff, excludeFiles);
-			ff.map(f => {
-				files.push(f);
-			});
-
-			dirs = multimatch(dirs, excludeDirs);
-			dirs.map(d => {
-				queue++;
-				getDirectory(d, dirr);
-			});
-
-			queued++;
-
-			if (queued == queue) {
-
-				console.log('files to download', files);
-				console.log('files to upload', toUpload.length);
-
-				if (toUpload.length > 0) uploadFiles();
-				if (files.length > 0) downloadFiles();
-				else watchProject();
-			}
-
-		}).catch(err => {
-			console.log('error retrieving root folder ', err, dir, from);
+				}).catch(err => {
+						console.log('error retrieving root folder ', err, dir, from);
+				});
 		});
-	});
 }
 
 function downloadFiles(n) {
 
-	n = (!n) ? 0 : n;
-	downloadFile(files[n]).then((err, ok) => {
-		n++;
-		if (n < files.length)
-			downloadFiles(n);
-		else {
-			console.log('DOWNLOAD COMPLETE!', n);
-			watchProject();
-		}
-	});
+		n = (!n) ? 0 : n;
+		downloadFile(files[n]).then((err, ok) => {
+				n++;
+				if (n < files.length)
+						downloadFiles(n);
+				else {
+						console.log('DOWNLOAD COMPLETE!', n);
+						watchProject();
+				}
+		});
 
 }
 
 function uploadFiles(n) {
 
-	n = (!n) ? 0 : n;
-	console.log('upload n ', n);
-	upload(toUpload[n]).then(() => {
-		n++;
-		if (n < toUpload.length)
-			uploadFiles(n);
-		else {
-			console.log('Uploads COMPLETE!', n);
-		}
-	});
+		n = (!n) ? 0 : n;
+		console.log('upload n ', n);
+		upload(toUpload[n]).then(() => {
+				n++;
+				if (n < toUpload.length)
+						uploadFiles(n);
+				else {
+						console.log('Uploads COMPLETE!', n);
+				}
+		});
 
 }
 
@@ -253,123 +249,125 @@ var queued = 0;
 
 function downloadFile(f, pct) {
 
-	return new Promise((resolve, reject) => {
-		let localPath = f.substring(0, f.lastIndexOf("/"));
-		let filename = f.replace(localPath, '');
+		return new Promise((resolve, reject) => {
+				let localPath = f.substring(0, f.lastIndexOf("/"));
+				let filename = f.replace(localPath, '');
 
-		localPath = path.join(FEconfig.localRoot, localPath);
+				localPath = path.join(FEconfig.localRoot, localPath);
 
-		if (localPath.length > 0 && !fs.existsSync(localPath))
-			mkdirp(localPath, (err, ok) => {
-				if (err) {
-					console.log('error creating local folder', localPath);
-					process.exit(1);
-				}
-				actualDownload();
-			});
-		else actualDownload();
-
-		function actualDownload() {
-			let from = upath.join(FEconfig.server.root, f);
-			let to = path.join(FEconfig.localRoot, f);
-
-			return scpConn.download(from, to, (err) => {
-				if (err) {
-					console.warn('error downloading', f);
-					reject();
-				} else {
-					console.log('downloaded', green, f);
-					resolve();
-					try {
-						// change the localFile created time so it will not be uploaded as an edited file
-						fs.open(to, 'r', (fsOpenErr, fd) => {
-							if (!fsOpenErr && !isOSWin64())
-								fs.futimesSync(fd, localFiles[f], localFiles[f]);
-							else console.log('fs.open error', fsOpenErr);
+				if (localPath.length > 0 && !fs.existsSync(localPath))
+						mkdirp(localPath, (err, ok) => {
+								if (err) {
+										console.log('error creating local folder', localPath);
+										process.exit(1);
+								}
+								actualDownload();
 						});
-					} catch (e) {
-						console.log('error setting last modified time ', e);
-					}
-				}
+				else actualDownload();
 
-			});
-		};
-	});
+				function actualDownload() {
+						let from = upath.join(FEconfig.server.root, f);
+						let to = path.join(FEconfig.localRoot, f);
+
+						return scpConn.download(from, to, (err) => {
+								if (err) {
+										console.warn('error downloading', f);
+										reject();
+								} else {
+										console.log('downloaded', green, f);
+										resolve();
+										try {
+												// change the localFile created time so it will not be uploaded as an edited file
+												fs.open(to, 'r', (fsOpenErr, fd) => {
+														if (!fsOpenErr && !isOSWin64())
+																fs.futimesSync(fd, localFiles[f], localFiles[f]);
+														else console.log('fs.open error', fsOpenErr);
+												});
+										} catch (e) {
+												console.log('error setting last modified time ', e);
+										}
+								}
+
+						});
+				};
+		});
 }
 
 function upload(relativePath) {
 
-	let from = path.join(FEconfig.localRoot, relativePath);
-	let to = upath.join(FEconfig.server.root, relativePath);
+		let from = path.join(FEconfig.localRoot, relativePath);
+		let to = upath.join(FEconfig.server.root, relativePath);
 
-	return new Promise((resolve, reject) => {
-		toTmp(relativePath).then(() => {
-			scpConn.upload(from, to, (err, ok) => {
-				if (err) {
-					console.warn('error uploading', relativePath);
-					reject();
-				} else {
-					console.log('uploaded', green, relativePath);
-					resolve();
-				}
-			});
+		return new Promise((resolve, reject) => {
+				toTmp(relativePath).then(() => {
+						scpConn.upload(from, to, (err, ok) => {
+								if (err) {
+										console.warn('error uploading', relativePath);
+										reject();
+								} else {
+										console.log('uploaded', green, relativePath);
+										resolve();
+								}
+						});
+				});
 		});
-	});
 }
 
 function toTmp(f) {
-	var from = upath.join(FEconfig.server.root, f);
-	var to = upath.join(tmpFolder, f);
+		var from = upath.join(FEconfig.server.root, f);
+		var to = upath.join(tmpFolder, f);
 
-	return new Promise((resolve, reject) => {
-		if (tmpFolder)
-			sshConn.exec('mv ' + from + ' ' + to, (err, stdout, stderr) => {
-				console.log('moved ', from, '  to  ', to);
-				resolve();
-			});
-		else resolve();
-	});
+		return new Promise((resolve, reject) => {
+				if (tmpFolder) {
+						sshConn.exec('mkdir -p ' + (upath.join(to, '../')), (err1, stdout1, stderr1) => {
+								sshConn.exec('mv ' + from + ' ' + to, (err, stdout, stderr) => {
+										console.log('moved ', from, '  to  ', to);
+										resolve();
+								});
+						});
+				} else resolve();
+		});
 }
 
 function watchProject() {
 
-	console.log('Watching for changes for ', FEconfig.projectName);
+		console.log('Watching for changes for ', FEconfig.projectName);
 
-	watcher = watch.createMonitor(FEconfig.localRoot, function(monitor) {
+		watcher = watch.createMonitor(FEconfig.localRoot, function(monitor) {
 
-		monitor.on("created", function(f, stat) {
-			console.log('new file', f, stat);
-			if (is('file', stat.mode)) {
-				f = f.replace(FEconfig.localRoot, '');
-				upload(f);
-			}
+				monitor.on("created", function(f, stat) {
+						console.log('new file', f, stat);
+						if (is('file', stat.mode)) {
+								f = f.replace(FEconfig.localRoot, '');
+								upload(f);
+						}
+				});
+				monitor.on("changed", function(f, curr, prev) {
+						f = f.replace(FEconfig.localRoot, '');
+						upload(f);
+				});
+				monitor.on("removed", function(f, stat) {
+						if (is('file', stat.mode)) {
+								f = f.replace(FEconfig.localRoot, '');
+								toTmp(f);
+						}
+				});
+				return monitor;
 		});
-		monitor.on("changed", function(f, curr, prev) {
-			f = f.replace(FEconfig.localRoot, '');
-			upload(f);
-		});
-		monitor.on("removed", function(f, stat) {
-			if (is('file', stat.mode)) {
-				f = f.replace(FEconfig.localRoot, '');
-				toTmp(f);
-			}
-		});
-		return monitor;
-	});
 }
 
 process.on('SIGINT', () => {
-	sshConn.end();
-	scpConn.close();
-	if (typeof watcher !== 'undefined') {
-		console.log(watcher);
-		watcher.stop();
-	}
-	console.log('connection closed - ', typeof watcher);
-	watcher = undefined;
+		sshConn.end();
+		scpConn.close();
+		if (typeof watcher !== 'undefined') {
+				console.log(watcher);
+				watcher.stop();
+		}
+		console.log('connection closed - ', typeof watcher);
+		watcher = undefined;
 
-	//rm.sync(FEconfig.localRoot);
-	setTimeout(() => {
-		process.exit(0);
-	}, 2000);
+		//rm.sync(FEconfig.localRoot);
+		setTimeout(() => {
+				process.exit(0);
+		}, 2000);
 });
