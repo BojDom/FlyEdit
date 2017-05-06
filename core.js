@@ -65,7 +65,7 @@ fs.access(tmpFolder, fs.constants.W_OK, (err) => {
 	}
 });*/
 function makeTmpFolder() {
-	sshConn.exec('mkdir -p '+tmpFolder,(err,out)=>{});
+	sshConn.exec('mkdir -p ' + tmpFolder, (err, out) => {});
 }
 
 var localFiles = {};
@@ -322,12 +322,13 @@ function toTmp(f) {
 	var to = upath.join(tmpFolder, f);
 
 	return new Promise((resolve, reject) => {
-		if (tmpFolder)
-			sshConn.exec('mv ' + from + ' ' + to, (err, stdout, stderr) => {
+		if (tmpFolder) {
+			let command ='mkdir -p '+upath.join(to, '../') +' && mv ' + from + ' ' + to; 
+			sshConn.exec(command, (err, stdout, stderr) => {
 				console.log('moved ', from, '  to  ', to);
 				resolve();
 			});
-		else resolve();
+		} else resolve();
 	});
 }
 

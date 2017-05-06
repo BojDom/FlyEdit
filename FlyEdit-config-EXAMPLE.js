@@ -3,7 +3,7 @@ const path=require('path'),
 	fs=require('fs');
 
 
-module.exports=[
+module.exports={
 
 	project1: {
 		projectName:"p1",
@@ -16,4 +16,5 @@ module.exports=[
 			username:'__fill_data_here__',
 			password:'__fill_data_here__'
 		}
-]
+	}
+};
