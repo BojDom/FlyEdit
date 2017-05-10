@@ -51,20 +51,6 @@ var excludeFiles = (FEconfig.excludeFiles) ? defaultExcludeFiles.concat(FEconfig
 var tmpFolder = FEconfig.server.tmpFolder || '/tmp/';
 tmpFolder = upath.join(tmpFolder, FEconfig.projectName, moment().format('DD_MM_YY-HH'));
 
-/*
-va cambiato con sistema remoto
-fs.access(tmpFolder, fs.constants.W_OK, (err) => {
-	if (err) {
-
-		mkdirp(tmpFolder, (err, ok) => {
-			if (err) {
-				tmpFolder = false;
-				console.warn('tmp folder is DISABLED');
-			}
-		});
-	}
-});*/
-
 
 var localFiles = {};
 var localFilesNames = [];
@@ -79,7 +65,10 @@ glob.sync(FEconfig.localRoot + '/**', {
 		let statFile = fs.statSync(f);
 		localFiles[rel] = moment(statFile.mtime).unix();
 });
-if (typeof localFiles === 'object') localFilesNames = Object.keys(localFiles);
+if (typeof localFiles === 'object') {
+	localFiles = multimatch(localFiles,excludeDirs)
+	localFilesNames = Object.keys(localFiles);
+}
 /*console.log(localFiles);
 process.exit();
 */
