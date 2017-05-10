@@ -48,6 +48,7 @@ var defaultExcludeFiles = ["**", "!.DS_Store"];
 
 var excludeDirs = (FEconfig.excludeDirs) ? defaultExcludeDirs.concat(FEconfig.excludeDirs) : defaultExcludeDirs;
 var excludeFiles = (FEconfig.excludeFiles) ? defaultExcludeFiles.concat(FEconfig.excludeFiles) : defaultExcludeFiles;
+if (!FEconfig.tollerance)  FEconfig.tollerance=10;
 var tmpFolder = FEconfig.server.tmpFolder || '/tmp/';
 tmpFolder = upath.join(tmpFolder, FEconfig.projectName, moment().format('DD_MM_YY-HH'));
 
@@ -66,12 +67,13 @@ glob.sync(FEconfig.localRoot + '/**', {
 		localFiles[rel] = moment(statFile.mtime).unix();
 });
 if (typeof localFiles === 'object') {
-	localFiles = multimatch(localFiles,excludeDirs)
-	localFilesNames = Object.keys(localFiles);
+		localFilesNames = Object.keys(localFiles)
+		let filtered = multimatch(localFilesNames, excludeDirs);
+
+		_.difference(localFilesNames, filtered).map(toRemove => {
+				delete localFiles[toRemove]
+		})
 }
-/*console.log(localFiles);
-process.exit();
-*/
 
 sshConn.on('error', function(hadError) {
 		console.log('err1', hadError);
@@ -161,9 +163,9 @@ function getDirectory(dir, from) {
 
 										if (localFilesNames.indexOf(f.filename) > -1) {
 												console.log(f.filename, localFiles[f.filename], f.attrs.mtime);
-												if (localFiles[f.filename] < f.attrs.mtime) {
+												if (localFiles[f.filename] < (f.attrs.mtime - FEconfig.tollerance)) {
 														addToQueue(f);
-												} else if (localFiles[f.filename] > f.attrs.mtime) {
+												} else if (localFiles[f.filename] > (f.attrs.mtime + FEconfig.tollerance)) {
 														toUpload.push(f.filename);
 												}
 										} else {
@@ -322,7 +324,13 @@ function watchProject() {
 
 		console.log('Watching for changes for ', FEconfig.projectName);
 
-		watcher = watch.createMonitor(FEconfig.localRoot, function(monitor) {
+		watcher = watch.createMonitor(FEconfig.localRoot, {
+				ignoreNotPermitted: true,
+				ignoreUnreadableDir: true,
+				filter: (name) => {
+						return (typeof multimatch([name], excludeDirs) === 'object')
+				}
+		}, function(monitor) {
 
 				monitor.on("created", function(f, stat) {
 						console.log('new file', f, stat);
